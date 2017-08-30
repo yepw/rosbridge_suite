@@ -2,6 +2,46 @@
 Changelog for package rosbridge_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.1 (2017-08-30)
+------------------
+
+0.8.0 (2017-08-30)
+------------------
+* Merge pull request `#281 <https://github.com/RobotWebTools/rosbridge_suite/issues/281>`_ from RobotWebTools/expose_b64
+  expose binary_encoder rosparam that was hidden in deep depth
+* address review comment. more explicitly describe valid args
+* correct the possible argument
+* expose binary_encoder rosparam that was hidden in deep depth
+* Merge pull request `#277 <https://github.com/RobotWebTools/rosbridge_suite/issues/277>`_ from T045T/remove_nodelay_for_udp
+  don't try to set TCP nodelay option for UDP
+* don't try to set TCP nodelay option for UDP
+* Merge pull request `#273 <https://github.com/RobotWebTools/rosbridge_suite/issues/273>`_ from Sanic/set_bson_only_flags
+  Set default for bson_only_mode in websocket handler and launch file.
+* Set default for bson_only_mode in websocket handler and launch file.
+* Merge pull request `#257 <https://github.com/RobotWebTools/rosbridge_suite/issues/257>`_ from Sanic/bson-only-mode
+  Implemented a bson_only_mode flag for the TCP version of rosbridge
+* Implemented a bson_only_mode flag for the TCP version of rosbridge; This allows you to switch to a full-duplex transmission of BSON messages and therefore eliminates the need for a base64 encoding of binary data; Use the new mode by starting:'roslaunch rosbridge_server rosbridge_tcp.launch bson_only_mode:=True' or passing '--bson_only_mode' to the rosbridge_tcp.py script
+* Contributors: Adolfo Rodriguez Tsouroukdissian, Jihoon Lee, Nils Berg, Patrick Mania, pmania
+
+0.7.17 (2017-01-25)
+-------------------
+* Fixed the launch files for the tcp and udp service. Without these modifications, the rosapi node fails because some rosparams are not defined properly before. Now the launchfiles comply to the websocket version.
+* Added default topics to all launch files, and fixed bug where it would crash if nothing was put into the lists as values
+* Fix: Set default to publish all topics
+  Without better doc, one does not understand why no topics are published. I thought, something is broken.
+  With this defaults, everything is working out of the box. And for a more secure setup, one can change it.
+* correct default values for security globs
+  also accept empty list as the default "do not check globs" value in addition to None.
+  Finally, append rosapi service glob after processing command line input so it's not overwritten
+* add missing imports and correct default values for glob parameters
+* Added services_glob to CallServices, added globs to rosbridge_tcp and rosbridge_udp, and other miscellanous fixes.
+* Two minor fixes.
+* Added new parameters for topic and service security.
+  Added 3 new parameters to rosapi and rosbridge_server which filter the
+  topics, services, and parameters broadcast by the server to match an
+  array of glob strings.
+* Contributors: Devon Ash, Eric, Nils Berg, Patrick Mania, plieningerweb
+
 0.7.16 (2016-08-15)
 -------------------
 

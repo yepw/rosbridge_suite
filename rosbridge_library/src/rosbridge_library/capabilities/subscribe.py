@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import fnmatch
 from threading import Lock
 from functools import partial
 from rospy import loginfo
@@ -37,6 +38,7 @@ from rosbridge_library.capability import Capability
 from rosbridge_library.internal.subscribers import manager
 from rosbridge_library.internal.subscription_modifiers import MessageHandler
 from rosbridge_library.internal.pngcompression import encode
+
 try:
     from ujson import dumps
 except ImportError:
@@ -179,9 +181,11 @@ class Subscription():
 class Subscribe(Capability):
 
     subscribe_msg_fields = [(True, "topic", (str, unicode)), (False, "type", (str, unicode)),
-        (False, "throttle_rate", int), (False, "fragment_size", int),
-        (False, "queue_length", int), (False, "compression", (str, unicode))]
+                            (False, "throttle_rate", int), (False, "fragment_size", int),
+                            (False, "queue_length", int), (False, "compression", (str, unicode))]
     unsubscribe_msg_fields = [(True, "topic", (str, unicode))]
+
+    topics_glob = None
 
     def __init__(self, protocol):
         # Call superclass constructor
@@ -196,12 +200,27 @@ class Subscribe(Capability):
     def subscribe(self, msg):
         # Pull out the ID
         sid = msg.get("id", None)
-        
+
         # Check the args
         self.basic_type_check(msg, self.subscribe_msg_fields)
 
         # Make the subscription
         topic = msg["topic"]
+
+        if Subscribe.topics_glob is not None and Subscribe.topics_glob:
+            self.protocol.log("debug", "Topic security glob enabled, checking topic: " + topic)
+            match = False
+            for glob in Subscribe.topics_glob:
+                if (fnmatch.fnmatch(topic, glob)):
+                    self.protocol.log("debug", "Found match with glob " + glob + ", continuing subscription...")
+                    match = True
+                    break
+            if not match:
+                self.protocol.log("warn", "No match found for topic, cancelling subscription to: " + topic)
+                return
+        else:
+            self.protocol.log("debug", "No topic security glob, not checking subscription.")
+
         if not topic in self._subscriptions:
             client_id = self.protocol.client_id
             cb = partial(self.publish, topic)
@@ -223,10 +242,24 @@ class Subscribe(Capability):
     def unsubscribe(self, msg):
         # Pull out the ID
         sid = msg.get("id", None)
-        
+ 
         self.basic_type_check(msg, self.unsubscribe_msg_fields)
 
         topic = msg["topic"]
+        if Subscribe.topics_glob is not None and Subscribe.topics_glob:
+            self.protocol.log("debug", "Topic security glob enabled, checking topic: " + topic)
+            match = False
+            for glob in Subscribe.topics_glob:
+                if (fnmatch.fnmatch(topic, glob)):
+                    self.protocol.log("debug", "Found match with glob " + glob + ", continuing unsubscription...")
+                    match = True
+                    break
+            if not match:
+                self.protocol.log("warn", "No match found for topic, cancelling unsubscription from: " + topic)
+                return
+        else:
+            self.protocol.log("debug", "No topic security glob, not checking unsubscription.")
+
         if topic not in self._subscriptions:
             return
         self._subscriptions[topic].unsubscribe(sid)
@@ -251,8 +284,22 @@ class Subscribe(Capability):
 
         """
         # TODO: fragmentation, proper ids
+        if Subscribe.topics_glob and Subscribe.topics_glob:
+            self.protocol.log("debug", "Topic security glob enabled, checking topic: " + topic)
+            match = False
+            for glob in Subscribe.topics_glob:
+                if (fnmatch.fnmatch(topic, glob)):
+                    self.protocol.log("debug", "Found match with glob " + glob + ", continuing topic publish...")
+                    match = True
+                    break
+            if not match:
+                self.protocol.log("warn", "No match found for topic, cancelling topic publish to: " + topic)
+                return
+        else:
+            self.protocol.log("debug", "No topic security glob, not checking topic publish.")
+
         outgoing_msg = {"op": "publish", "topic": topic, "msg": message}
-        if compression=="png":
+        if compression == "png":
             outgoing_msg_dumped = dumps(outgoing_msg)
             outgoing_msg = {"op": "png", "data": encode(outgoing_msg_dumped)}
         self.protocol.send(outgoing_msg)
